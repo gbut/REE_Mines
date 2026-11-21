@@ -17,13 +17,13 @@ The page loads each source live every time it opens. If a source can't be reache
 |---|---|---|
 | Stimson mine points | Stimson Center "Mining in Southeast Asia" Google Sheet, filtered to `Country = Myanmar` and `Metal = Rare Earth` | Copy saved 20 Nov 2026 |
 | Myanmar Witness points | Myanmar Witness / CIR public ArcGIS layer | Copy saved 20 Nov 2026 |
-| BVC Archive | BVC "REE Mines – Archive" Google Sheet (columns A–F: Date, Title, Source, Author, Notes, Link) | Copy saved 20 Nov 2026 |
+| BVC Archive | BVC "REE Mines – Archive" Google Sheet, read through its CSV export (columns A–F: Date, Title, Source, Author, Notes, Link). Only rows under the **Articles and Reports** header row are shown; rows under **Social Media** are left out. | Copy saved 20 Nov 2026 |
 | Reports | `reports.json` in this repository | Copy saved inside `index.html` |
 
 Notes on the live sources:
 
 - **Stimson site IDs** (S001, S002, …) follow row order in Stimson's sheet. They stay stable as long as Stimson doesn't insert or delete rows above existing ones.
-- **BVC Archive dates:** Google's sheet export drops values in the Date column that don't match the column's main type. For example, a bare year such as `2025` in a column of full dates comes through empty. Rows that were in the saved copy keep their saved date. For new rows, enter full dates, or format the Date column as plain text.
+- **BVC Archive sections:** a section header is a row with text in column A and nothing in columns B–F. Every row after a header belongs to that section until the next header. Dates are shown as typed (full dates, `YYYY-MM` or a bare year).
 - **BVC Archive changes** appear on the next page load, usually within a few minutes of the edit.
 
 ## `reports.json` format
