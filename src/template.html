@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Burma Rare Earth Mines</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=Archivo+Narrow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: field-investigation desk — sober, precise, evidence first.
+   IDEA: a remote-sensing analyst's light table: satellite plate on the right, case file on the left.
+   PICTURE: the satellite map itself, mines glowing like the leach pools they mark.
+   COLOUR/TYPE: deep forest-slate ground, leach-pool turquoise accent, hot source colours on imagery; Archivo + Archivo Narrow.
+   LAYOUT: fixed case-file sidebar (tabs) + full-bleed map + slide-up detail card; stacks map-first on phones. */
+:root{--bg:#0f1c1b;--panel:#142523;--line:#24403c;--ink:#e8f1ee;--mute:#9fb7b1;--acc:#4fe0d4;--warn:#ffb36b;
+ --c0:#ff8a3d;--c1:#ffd84a;--c2:#ff4f6d;--c3:#b48cff;--c4:#d6d6d6;--mw:#46f0ff}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Archivo,system-ui,sans-serif;display:grid;grid-template-columns:400px 1fr;height:100vh;overflow:hidden}
+aside{display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--panel);overflow:hidden}
+header{padding:18px 20px 12px;border-bottom:1px solid var(--line)}
+h1{font:800 24px/1.1 Archivo,sans-serif;margin:0 0 6px;text-wrap:balance}
+.sub{color:var(--mute);font-size:13px;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.kpi b{display:block;font:800 clamp(20px,2.4vw,26px)/1 Archivo;color:var(--acc)}
+.kpi span{font-size:12px;color:var(--mute)}
+nav{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+nav button{flex:1 0 auto;white-space:nowrap;padding-inline:6px!important;font-size:13.5px!important;background:none;border:0;color:var(--mute);font:600 14px Archivo Narrow,sans-serif;padding:12px 4px;min-height:44px;cursor:pointer;border-bottom:2px solid transparent}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--acc)}
+nav button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.tab{display:none;overflow:auto;padding:14px 20px 30px;flex:1}
+.tab.on{display:block}
+h2{font:600 15px/1.2 Archivo Narrow,sans-serif;color:var(--mute);margin:18px 0 8px}
+h2:first-child{margin-top:4px}
+.lyr{display:grid;grid-template-columns:22px 14px 1fr auto;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px}
+.lyr input{width:18px;height:18px;accent-color:var(--acc)}
+.sw{width:12px;height:12px;border-radius:50%}
+.sw.ring{background:none!important;border:2.5px solid var(--mw)}
+.lyr small{color:var(--mute);font-variant-numeric:tabular-nums}
+.grp{font-size:12px;color:var(--mute);margin:10px 0 2px}
+select,input[type=search]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 10px;font:16px Archivo;min-height:44px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chk{display:flex;gap:6px;align-items:center;font-size:14px;min-height:32px;cursor:pointer}
+.chk input{accent-color:var(--acc);width:17px;height:17px}
+.range{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.range label{font-size:12px;color:var(--mute)}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.btn{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 12px;min-height:40px;font:600 14px Archivo;cursor:pointer}
+.btn:hover{border-color:var(--acc)}
+.btn.pri{background:var(--acc);color:#062421;border-color:var(--acc)}
+.hist{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px;border-bottom:1px solid var(--line)}
+.hist .col{flex:1;display:flex;flex-direction:column-reverse;height:100%;position:relative;cursor:pointer}
+.hist .col div{width:100%}
+.hist .col.off{opacity:.25}
+.hlab{display:flex;gap:3px;font-size:11px;color:var(--mute)}
+.hlab span{flex:1;text-align:center}
+.hnote{font-size:12px;color:var(--mute);margin-top:6px}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;background:var(--bg)}
+.card h3{margin:0 0 4px;font:600 16px/1.25 Archivo}
+.card p{margin:4px 0 8px;font-size:14px;color:#cfe0dc}
+.card .meta{font-size:12px;color:var(--mute)}
+a{color:var(--acc)}
+button,select,input{font-family:inherit}
+.rep{padding:10px 0;border-bottom:1px solid var(--line)}
+.rep a{font-weight:600;text-decoration:none}
+.rep a:hover{text-decoration:underline}
+.rep .meta{font-size:12px;color:var(--mute)}
+.rep p{margin:3px 0 0;font-size:13.5px;color:#cfe0dc}
+.tag{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:10px;padding:0 7px;margin-right:6px;color:var(--mute)}
+#map{height:100vh;background:#08100f}
+#detail{position:absolute;right:14px;bottom:24px;width:min(380px,calc(100% - 28px));max-height:70vh;overflow:auto;background:rgba(15,28,27,.97);border:1px solid var(--line);border-radius:10px;padding:16px 18px;z-index:1000;display:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#detail.on{display:block}
+#detail h3{margin:0 30px 2px 0;font:800 20px/1.2 Archivo}
+#detail table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+#detail td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+#detail td:first-child{color:var(--mute);width:42%;padding-right:8px}
+#detail img{width:100%;border-radius:6px;margin-top:8px;display:block}
+#detail .x{position:absolute;right:8px;top:8px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:18px;cursor:pointer}
+.flag{background:#3a2a14;border:1px solid #6b4a1e;color:var(--warn);font-size:12.5px;padding:6px 8px;border-radius:6px;margin:6px 0}
+.links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.links a,.links button{font-size:13px;border:1px solid var(--line);border-radius:6px;padding:6px 9px;text-decoration:none;background:var(--bg);color:var(--acc);cursor:pointer;font-family:Archivo}
+.wrap{position:relative}
+.basemap{position:absolute;top:10px;right:10px;z-index:900;background:rgba(15,28,27,.92);border:1px solid var(--line);border-radius:8px;padding:6px}
+.basemap select{min-height:36px;font-size:14px;padding:5px 8px;width:auto}
+.leaflet-container{font:13px Archivo,sans-serif}
+.leaflet-tooltip.alab{background:rgba(15,28,27,.85);color:var(--ink);border:1px solid var(--acc);font:600 12px Archivo Narrow;box-shadow:none}
+.leaflet-tooltip.alab:before{display:none}
+.leaflet-tooltip.slab{background:none;border:0;box-shadow:none;color:#eafff0;font:800 15px Archivo,sans-serif;text-shadow:0 0 3px #000,0 0 6px #000,0 1px 2px #000;padding:0}
+.leaflet-tooltip.slab.cn{color:#ffd3d8;font-weight:600;font-style:italic;font-size:14px}
+.leaflet-tooltip.slab:before{display:none}
+.arc{padding:10px 0;border-bottom:1px solid var(--line)}
+.arc a{font-weight:600;text-decoration:none}.arc a:hover{text-decoration:underline}
+.arc .meta{font-size:12px;color:var(--mute)}
+.arc p{margin:3px 0 0;font-size:13px;color:#cfe0dc}
+.leaflet-control-attribution{background:rgba(15,28,27,.8)!important;color:var(--mute)!important}
+.leaflet-control-attribution a{color:var(--acc)!important}
+.small{font-size:12.5px;color:var(--mute)}
+code{font-size:12px;overflow-wrap:anywhere}
+@media(max-width:820px){
+ body{grid-template-columns:1fr;grid-template-rows:56vh auto;height:auto;overflow:auto}
+ .wrap{order:1}#map{height:56vh}
+ aside{order:2;border-right:0;overflow:visible}.tab{overflow:visible}
+ #detail{position:fixed;bottom:0;right:0;left:0;width:100%;max-height:60vh;border-radius:12px 12px 0 0}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<aside>
+ <header>
+  <h1>Rare earth mining in Burma (Myanmar)</h1>
+  <p class="sub">In-situ leach rare earth mines identified from satellite imagery in Kachin and Shan states. Click any point for details.</p>
+  <p class="small" id="dstat" style="margin:6px 0 0">Loading the latest data…</p>
+  <div class="kpis">
+   <div class="kpi"><b id="kAll">–</b><span>points shown</span></div>
+   <div class="kpi"><b id="kS">–</b><span>Stimson sites</span></div>
+   <div class="kpi"><b id="kM">–</b><span>Myanmar Witness sites</span></div>
+  </div>
+ </header>
+ <nav role="tablist">
+  <button role="tab" aria-selected="true" data-t="layers">Layers</button>
+  <button role="tab" aria-selected="false" data-t="filters">Filters</button>
+  <button role="tab" aria-selected="false" data-t="areas">Areas</button>
+  <button role="tab" aria-selected="false" data-t="reports">Reports</button>
+  <button role="tab" aria-selected="false" data-t="archive">BVC Archive</button>
+  <button role="tab" aria-selected="false" data-t="about">Data</button>
+ </nav>
+
+ <section class="tab on" id="t-layers">
+  <h2>Layers by source</h2>
+  <div class="grp">Stimson Center — mining dataset (Google Sheet), filtered to Myanmar rare earth mines, split by credited source</div>
+  <div id="lyrS"></div>
+  <div class="grp">Myanmar Witness (CIR) &amp; Mizzima — Rare Earth Mining Map (ArcGIS)</div>
+  <div id="lyrM"></div>
+  <div class="grp">Reference</div>
+  <label class="lyr"><input type="checkbox" id="oBorder" checked><span class="sw" style="background:none;border:2px dashed #fff"></span><span>Myanmar outline (Natural Earth 1:10m)</span><small></small></label>
+  <label class="lyr"><input type="checkbox" id="oAdmin" checked><span class="sw" style="background:none;border:2px solid #8dffa8"></span><span>Kachin &amp; Shan states; bordering Chinese provinces</span><small>4</small></label>
+  <label class="lyr"><input type="checkbox" id="oAreas" checked><span class="sw" style="background:var(--acc)"></span><span>Mining-area labels</span><small>8</small></label>
+  <label class="lyr"><input type="checkbox" id="oLabels" checked><span class="sw" style="background:#fff"></span><span>Place names &amp; borders (Esri)</span><small></small></label>
+  <h2>Find a site</h2>
+  <input type="search" id="q" placeholder="Site ID, e.g. S120 or RE0045" aria-label="Find site by ID">
+  <h2>Mines by first year in the record</h2>
+  <div class="hist" id="hist"></div>
+  <div class="hlab" id="hlab"></div>
+  <p class="hnote">Stacked by layer colour. Stimson's “Year” and Myanmar Witness's “built before” year are both shown. Click a bar to filter to that single year; click again to clear.</p>
+  <div class="row" style="margin-top:10px"><button class="btn pri" id="play">▶ Play timeline</button><button class="btn" id="reset">Reset filters</button></div>
+ </section>
+
+ <section class="tab" id="t-filters">
+  <h2>Year range</h2>
+  <div class="range">
+   <div><label for="y0">From <b id="y0v"></b></label><input type="range" id="y0" min="2013" max="2026" value="2013"></div>
+   <div><label for="y1">To <b id="y1v"></b></label><input type="range" id="y1" min="2013" max="2026" value="2026"></div>
+  </div>
+  <label class="chk"><input type="checkbox" id="yUnk" checked> Include sites with no year recorded</label>
+  <h2>State</h2>
+  <div class="row"><label class="chk"><input type="checkbox" class="fSt" value="Kachin" checked> Kachin</label><label class="chk"><input type="checkbox" class="fSt" value="Shan" checked> Shan</label></div>
+  <h2>River basin (Stimson only)</h2>
+  <div class="row" id="fBasin"></div>
+  <h2>Sub-basin (Stimson only)</h2>
+  <select id="fSub"><option value="">All sub-basins</option></select>
+  <h2>Pits per site (Myanmar Witness only)</h2>
+  <label for="pits" class="small">At least <b id="pitsv">1</b> pits</label>
+  <input type="range" id="pits" min="1" max="30" value="1">
+  <h2>Border proximity</h2>
+  <label class="chk"><input type="checkbox" id="nbOnly"> Show only points flagged near the China border</label>
+  <p class="small">Points that fall up to 4 km on the Chinese side of the coarse Natural Earth border line are kept (every source records them in Kachin State) but flagged.</p>
+ </section>
+
+ <section class="tab" id="t-areas">
+  <h2>Mining areas</h2>
+  <div id="areaList"></div>
+ </section>
+
+ <section class="tab" id="t-reports">
+  <h2>Reports, datasets and reporting</h2>
+  <p class="small">Additional references not already in the BVC Archive. Items that appear in the archive are listed only there.</p>
+  <div id="repList"></div>
+ </section>
+
+ <section class="tab" id="t-archive">
+  <h2>BVC Archive</h2>
+  <p class="small">References from the "Articles and Reports" section of the BVC rare earth mines archive (REE Mines – Archive), newest first. Social media items are not included. <b id="arN"></b></p>
+  <input type="search" id="arQ" placeholder="Search title, source, author or notes" aria-label="Search the BVC Archive">
+  <div class="range" style="margin-top:8px"><select id="arSrc" aria-label="Filter by source"><option value="">All sources</option></select><select id="arYr" aria-label="Filter by year"><option value="">All years</option></select></div>
+  <div id="arList"></div>
+ </section>
+
+ <section class="tab" id="t-about">
+  <h2>What's mapped</h2>
+  <p><b>Stimson Center</b> — “Mining in Southeast Asia” sheet behind the Stimson mining dashboard (Planet Labs imagery). The sheet has 2,839 rows covering Cambodia, Laos and Myanmar and several mining methods. Only rows with <code>Country = Myanmar</code> and <code>Metal = Rare Earth</code> are shown (604 rows, all in-situ leaching, all in Kachin or Shan). Laos rows, alluvial, heap-leach, gold, jade, manganese, tungsten and unknown rows are left out.</p>
+  <p><b>Myanmar Witness / Centre for Information Resilience, with Mizzima</b> — public ArcGIS layer behind the “Rare Earth Mining Map” (237 sites in Chipwi and Momauk townships, Kachin; with pit counts and the year each site was visible by).</p>
+  <p class="small">The two layers overlap heavily: Stimson credits Myanmar Witness for many Kachin points, and <b id="ovl"></b> of the 237 Myanmar Witness sites sit within 300 m of a Stimson point. Each detail card names the nearest point in the other layer, so you can compare them.</p>
+  <h2>Live data status</h2>
+  <ul class="small" id="dsrc"></ul>
+  <p class="small">Each time the page opens, it fetches the latest Stimson sheet rows, the Myanmar Witness layer, the BVC Archive sheet and the Reports list. If a source can't be reached, the page uses the copy saved inside it. Stimson site IDs follow sheet row order.</p>
+  <h2>Caveats</h2>
+  <ul class="small">
+   <li>Points mark mine sites, not their footprints. One site can have dozens of leach pools.</li>
+   <li>“Year” is the year in the source record: when the site first appears in imagery for Stimson, and the year it was built by for Myanmar Witness. It doesn't show whether a mine is active now.</li>
+   <li>Default satellite imagery (Esri) is often several years old. Switch to Sentinel-2 cloudless, or use the per-site Esri Wayback and Google links, for other dates.</li>
+   <li>Other mapped work, including Global Witness, Crisis Group and SHRF, is published as images or proprietary map styles, not open coordinates. Those findings are linked under Reports, BVC Archive and Areas but aren't plotted as points.</li>
+  </ul>
+  <h2>Export</h2>
+  <div class="row"><button class="btn" id="dl">Download filtered GeoJSON</button><button class="btn" id="cp">Copy filtered GeoJSON</button></div>
+  <p class="small" id="cpmsg"></p>
+  <p class="small">Saved copy retrieved {{SNAPSHOT_DATE_LONG}}. Please credit Stimson Center / Planet Labs and Myanmar Witness (CIR) / Mizzima when you reuse the data.</p>
+ </section>
+</aside>
+
+<div class="wrap">
+ <div id="map" role="application" aria-label="Satellite map of rare earth mines"></div>
+ <div class="basemap"><select id="bm" aria-label="Basemap">
+  <option value="esri">Esri World Imagery</option>
+  <option value="s2">Sentinel-2 cloudless 2023 (EOX)</option>
+  <option value="topo">Esri topographic</option>
+  <option value="osm">OpenStreetMap</option>
+ </select></div>
+ <div id="detail" aria-live="polite"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+{
+const D=/*DATA*/null;
+const ADM=/*ADMIN*/null;
+const ARC=/*ARCHIVE*/null;
+const SRC_COL=["var(--c0)","var(--c1)","var(--c2)","var(--c3)","var(--c4)"];
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const HEX=["--c0","--c1","--c2","--c3","--c4"].map(cssv), MWC=cssv("--mw");
+const SRC_SHORT=["SHRF / Stimson / Planet","Myanmar Witness / Stimson / Planet","Stimson / Planet","USGS / Stimson / Planet","Source not given (Stimson sheet)"];
+
+const AREAS=[
+ {n:"Pangwa – Kachin Special Region 1",c:[25.67,98.34],z:12,st:"Kachin",d:"The world's densest cluster of heavy rare earth leach mines, along the China border in Chipwi Township. It was run by the junta-aligned NDA-K militia until the Kachin Independence Army took Pangwa on 19 October 2024. Landslides at sites here killed around 50 people in 2024.",l:[["Global Witness, 2022","https://globalwitness.org/en/campaigns/natural-resource-governance/myanmars-poisoned-mountains"],["Myanmar Witness","https://www.info-res.org/articles/uncovered-the-devastating-impact-of-myanmars-rare-earth-mining-boom/"],["Crisis Group","https://crisisgroup.org/visual-explainers/critical-minerals-myanmar/rare-earths/"]]},
+ {n:"Northern Chipwi (Ngaw Chaing Hka)",c:[25.88,98.45],z:11,st:"Kachin",d:"Mines spreading north and east of Pangwa toward Chipwi town, mostly first recorded between 2020 and 2025. Myanmar Witness logged a 2024 wave of new sites here, at around 25.9–26.0°N.",l:[["Myanmar Witness map","https://info-res.org/myanmar-witness/maps/rare-earth-mining-map"]]},
+ {n:"Momauk Township (KIO)",c:[24.33,97.62],z:12,st:"Kachin",d:"Southern Kachin cluster in Kachin Independence Organisation territory. Global Witness reported a sharp rise in sites here in 2024. A few sites date back to 2013–2015 imagery.",l:[["Global Witness, 2024","https://www.globalwitness.org/en/campaigns/natural-resource-governance/fuelling-the-future-poisoning-the-present-myanmars-rare-earth-boom/"]]},
+ {n:"Irrawaddy mainstream, east of Myitkyina",c:[25.39,98.05],z:13,st:"Kachin",d:"About 65 km east of Myitkyina. Four Stimson points credited to USGS, draining directly into the Irrawaddy mainstream.",l:[]},
+ {n:"Mantong Township – TNLA-held northern Shan",c:[23.40,97.20],z:10,st:"Shan",d:"Newest frontier. Stimson found at least 12 rare earth mines and new roads to the China border in TNLA territory, with collection pools appearing from December 2025.",l:[["Stimson, Jul 2026","https://stimson.org/2026/rare-earth-mining-in-myanmar-expands-to-tnla-held-territory/"]]},
+ {n:"Mong Pawk – Wa region (Nam Lwe headwaters)",c:[21.92,99.33],z:11,st:"Shan",d:"United Wa State Army territory at the head of the Nam Lwe, a Mekong tributary. Stimson counted 31 mines here in 2025. Downstream farmland at Mong Khark was buried in mud during July 2025 floods.",l:[["Stimson, Sep 2025","https://stimson.org/2025/toxic-rare-earth-mining-is-ruining-mekong-tributaries-in-the-golden-triangle/"],["Irrawaddy, Sep 2025","https://www.irrawaddy.com/?p=149614"]]},
+ {n:"Mong Yawng – NDAA Special Region 4",c:[21.43,100.50],z:11,st:"Shan",d:"Eastern Shan, under 40 km from the Mekong. SHRF counted 19 in-situ leach mines in May 2025, up from three in 2021.",l:[["BNI / SHRF, Aug 2025","https://www.bnionline.net/en/news/shrf-says-satellite-images-show-ndaa-controls-19-new-rare-earth-mines"]]},
+ {n:"Kok River headwaters – Mong Yawn, Mong Hsat",c:[20.345,99.35],z:13,st:"Shan",d:"Mines on both banks of the Kok upstream of Thailand's Chiang Mai and Chiang Rai provinces. SHRF links them to China Investment Mining Company, and downstream testing in Thailand has found contamination.",l:[["SHRF, Oct 2025","https://shanhumanrights.org/?p=4608"],["Nation Thailand","https://www.nationthailand.com/news/asean/40057461"]]}
+];
+
+const REPS_SNAP=/*REPORTS*/null;
+
+/* ---------- data ---------- */
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let S=D.s.map(r=>({k:"s",id:r[0],y:r[1],st:D.P[r[2]],ba:D.F[r[3]],sb:D.B[r[4]],la:r[5],lo:r[6],src:r[7],nb:r[8],nn:r[9],nd:r[10]}));
+let M=D.m.map(r=>({k:"m",id:r[0],la:r[1],lo:r[2],y:r[3],pits:r[4],tw:D.T[r[5]][0],st:D.T[r[5]][1],img:r[6],nb:r[7],nn:r[8],nd:r[9]}));
+let ALL=[...S,...M], byId=Object.fromEntries(ALL.map(p=>[p.id,p]));
+document.getElementById("ovl").textContent=M.filter(m=>m.nd<300).length;
+
+/* ---------- live sources ---------- */
+const STIMSON_SHEET="1bfGeMKv3piuMtmnJJq_XW3cBwVwtYISSjX1o4jqRLZE",STIMSON_GID="1355866538";
+const BVC_SHEET="1QNfqAaXdOlTA9PiWYg-fo8wqJ8dhZYWQytxXUMHMNPg",BVC_GID="0";
+const MW_URL="https://services-eu1.arcgis.com/06WOSMGHsCnaFyMp/arcgis/rest/services/rare_earth_arcgis_data_view/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&resultRecordCount=5000&f=json";
+const gviz=(id,gid,q)=>`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&gid=${gid}&tq=${encodeURIComponent(q)}&_=${Date.now()}`;
+function parseCSV(s){const rows=[];let row=[],f="",q=false;for(let i=0;i<s.length;i++){const c=s[i];
+ if(q){if(c==='"'){if(s[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+ else if(c==='"')q=true;else if(c===","){row.push(f);f=""}else if(c==="\n"){row.push(f);rows.push(row);row=[];f=""}else if(c!=="\r")f+=c}
+ if(f!==""||row.length){row.push(f);rows.push(row)}return rows}
+const timeout=(ms)=>{const c=new AbortController();setTimeout(()=>c.abort(),ms);return c.signal};
+const getText=async u=>{const r=await fetch(u,{credentials:"omit",cache:"no-store",signal:timeout(20000)});if(!r.ok)throw Error("HTTP "+r.status);return r.text()};
+/* border distance against the Natural Earth outline */
+const RINGS=(D.mm.type==="Polygon"?[D.mm.coordinates]:D.mm.coordinates).flat();
+function inPoly(lo,la){let inside=false;for(const ring of (D.mm.type==="Polygon"?[D.mm.coordinates]:D.mm.coordinates)){let c=false;const r=ring[0];
+ for(let i=0,j=r.length-1;i<r.length;j=i++){const [xi,yi]=r[i],[xj,yj]=r[j];if(((yi>la)!==(yj>la))&&(lo<(xj-xi)*(la-yi)/(yj-yi)+xi))c=!c}
+ if(c){let hole=false;for(const h of ring.slice(1)){let hc=false;for(let i=0,j=h.length-1;i<h.length;j=i++){const [xi,yi]=h[i],[xj,yj]=h[j];if(((yi>la)!==(yj>la))&&(lo<(xj-xi)*(la-yi)/(yj-yi)+xi))hc=!hc}if(hc)hole=true}if(!hole)inside=true}}return inside}
+function kmOutside(la,lo){if(inPoly(lo,la))return 0;const kx=111.32*Math.cos(la*Math.PI/180),ky=110.57;let best=1e9;
+ for(const r of RINGS)for(let i=1;i<r.length;i++){const ax=(r[i-1][0]-lo)*kx,ay=(r[i-1][1]-la)*ky,bx=(r[i][0]-lo)*kx,by=(r[i][1]-la)*ky;
+  const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;let tt=L2?-(ax*dx+ay*dy)/L2:0;tt=Math.max(0,Math.min(1,tt));const d=Math.hypot(ax+tt*dx,ay+tt*dy);if(d<best)best=d}
+ return Math.round(best*10)/10}
+const hav=(a,b,c,d)=>{const R=6371e3,r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)))};
+function crossRef(A,B){for(const p of A){let best=[null,1e12];for(const q of B){const d=hav(p.la,p.lo,q.la,q.lo);if(d<best[1])best=[q.id,d]}p.nn=best[0];p.nd=best[0]?best[1]:null}}
+async function liveStimson(){
+ const rows=parseCSV(await getText(gviz(STIMSON_SHEET,STIMSON_GID,"select C,E,F,G,H,I,J where D='Myanmar' and B='Rare Earth'")));
+ const h=rows.shift().map(x=>x.trim().toLowerCase());
+ if(!(h[0].startsWith("year")&&h[4].startsWith("lat")&&h[5].startsWith("lon")))throw Error("unexpected columns: "+h.join("|"));
+ const out=rows.map((r,i)=>[r,i]).filter(([r])=>r.length>=6&&r[4]!==""&&r[5]!==""&&!isNaN(+r[4])).map(([r,i])=>{const src=D.S.indexOf((r[6]||"").trim()||"(not given)");
+  return {k:"s",id:"S"+String(i+1).padStart(3,"0"),y:r[0]?Math.round(+r[0]):null,st:r[1].trim(),ba:r[2].trim(),sb:r[3]?r[3].replace(" (Myanmar)","").trim():"",la:+(+r[4]).toFixed(5),lo:+(+r[5]).toFixed(5),src:src<0?4:src,srcName:(r[6]||"").trim()}});
+ if(out.length<100)throw Error("only "+out.length+" rows");return out}
+async function liveMW(){const d=JSON.parse(await getText(MW_URL));if(!d.features||!d.features.length)throw Error("no features");
+ return d.features.map(f=>{const a=f.attributes,m=(a.Description||"").match(/located in ([^,]+), ([^,]+?)(?: State)?,/),img=(a.Site_Image||"").match(/items\/([0-9a-f]{32})/);
+  return {k:"m",id:a.Site_ID,la:+f.geometry.y.toFixed(5),lo:+f.geometry.x.toFixed(5),y:a.Year,pits:a.Number_of_Pits||0,tw:m?m[1]:"Unknown",st:m?m[2]:"Kachin",img:img?img[1]:""}})}
+
+/* ---------- map ---------- */
+const map=L.map("map",{zoomControl:true,preferCanvas:true,worldCopyJump:false}).setView([23.3,98.2],7);
+const esriAttr='Imagery © Esri, Maxar, Earthstar Geographics, GIS User Community';
+const BM={
+ esri:L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:esriAttr}),
+ s2:L.tileLayer("https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2023_3857/default/g/{z}/{y}/{x}.jpg",{maxZoom:15,attribution:'<a href="https://s2maps.eu">Sentinel-2 cloudless 2023</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2023)'}),
+ topo:L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles © Esri"}),
+ osm:L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"})
+};
+let curBM=BM.esri.addTo(map);
+const labels=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,pane:"overlayPane",opacity:.85}).addTo(map);
+document.getElementById("bm").onchange=e=>{map.removeLayer(curBM);curBM=BM[e.target.value].addTo(map);curBM.bringToBack()};
+const border=L.geoJSON(D.mm,{style:{color:"#fff",weight:1.6,dashArray:"5 5",fill:false,opacity:.8},interactive:false}).addTo(map);
+const admin=L.geoJSON(ADM,{interactive:false,style:f=>f.properties.c==="MM"
+ ?{color:"#8dffa8",weight:2.2,opacity:.95,fillColor:"#8dffa8",fillOpacity:.04}
+ :{color:"#ff9aa6",weight:1.8,opacity:.9,dashArray:"7 5",fill:false}}).addTo(map);
+const ADM_LAB={"Kachin State":[26.7,97.35],"Shan State":[21.25,97.75],"Yunnan Province":[24.6,101.3],"Tibet (Xizang) Autonomous Region":[28.95,96.1]};
+const adminLab=L.layerGroup(ADM.features.map(f=>{const n=f.properties.name;return L.circleMarker(ADM_LAB[n]||[f.properties.ly,f.properties.lx],{radius:0,opacity:0,interactive:false}).bindTooltip(f.properties.c==="CN"?n+", China":n,{permanent:true,direction:"center",className:"slab"+(f.properties.c==="CN"?" cn":"")})})).addTo(map);
+const canvas=L.canvas({padding:.5,tolerance:6});
+
+const areaLayer=L.layerGroup(AREAS.map((a,i)=>L.circleMarker(a.c,{radius:0,opacity:0}).bindTooltip(a.n,{permanent:true,direction:"right",className:"alab",offset:[10,0]}).on("click",()=>flyArea(i)))).addTo(map);
+
+const markers=new Map();
+const styleOf=(p,hi)=>p.k==="s"
+ ?{renderer:canvas,radius:hi?9:5,color:hi?"#fff":"#1a0d05",weight:hi?3:1,fillColor:HEX[p.src],fillOpacity:.95}
+ :{renderer:canvas,radius:hi?12:Math.max(5,Math.min(11,4+Math.sqrt(p.pits)*1.3)),color:hi?"#fff":MWC,weight:hi?3.5:2.2,fill:true,fillColor:MWC,fillOpacity:hi?.35:.08};
+function buildMarkers(){for(const m of markers.values())map.removeLayer(m);markers.clear();
+ for(const p of ALL){const m=L.circleMarker([p.la,p.lo],styleOf(p,false));
+  m.bindTooltip(p.id+(p.y?" · "+p.y:""),{direction:"top",offset:[0,-6]});
+  m.on("click",()=>select(p.id,false));markers.set(p.id,m)}}
+buildMarkers();
+
+/* ---------- state ---------- */
+const st={src:[1,1,1,1,1],mw:0,y0:2013,y1:2026,unk:true,states:new Set(["Kachin","Shan"]),basins:new Set(D.F),sub:"",pits:1,nb:false,sel:null,yearOnly:null};
+const pass=p=>{
+ if(p.k==="s"&&!st.src[p.src])return false;
+ if(p.k==="m"&&!st.mw)return false;
+ if(!st.states.has(p.st))return false;
+ if(st.nb&&!p.nb)return false;
+ if(p.y==null){if(!st.unk||st.yearOnly)return false}
+ else{if(st.yearOnly&&p.y!==st.yearOnly)return false;if(p.y<st.y0||p.y>st.y1)return false}
+ if(p.k==="s"){if(!st.basins.has(p.ba))return false;if(st.sub&&p.sb!==st.sub)return false}
+ if(p.k==="m"&&p.pits<st.pits)return false;
+ return true};
+let visible=[];
+function render(){
+ visible=ALL.filter(pass);
+ const vis=new Set(visible.map(p=>p.id));
+ for(const [id,m] of markers){const on=vis.has(id);if(on&&!map.hasLayer(m))m.addTo(map);else if(!on&&map.hasLayer(m))map.removeLayer(m)}
+ if(st.sel&&markers.get(st.sel)&&map.hasLayer(markers.get(st.sel)))markers.get(st.sel).bringToFront();
+ kpi();hist();layerCounts();
+}
+function kpi(){const n=(f)=>visible.filter(f).length;
+ document.getElementById("kAll").textContent=visible.length;
+ document.getElementById("kS").textContent=n(p=>p.k==="s");
+ document.getElementById("kM").textContent=n(p=>p.k==="m")}
+
+/* ---------- layer list ---------- */
+const lyrS=document.getElementById("lyrS");
+lyrS.innerHTML=D.S.map((s,i)=>`<label class="lyr"><input type="checkbox" data-src="${i}" checked><span class="sw" style="background:${SRC_COL[i]}"></span><span>${SRC_SHORT[i]}</span><small id="cS${i}"></small></label>`).join("");
+document.getElementById("lyrM").innerHTML=`<label class="lyr"><input type="checkbox" id="mwOn"><span class="sw ring"></span><span>Myanmar Witness sites (ring size = pits; off by default)</span><small id="cM"></small></label>`;
+lyrS.onchange=e=>{st.src[+e.target.dataset.src]=e.target.checked?1:0;render()};
+document.getElementById("mwOn").onchange=e=>{st.mw=e.target.checked?1:0;render()};
+function layerCounts(){
+ D.S.forEach((_,i)=>document.getElementById("cS"+i).textContent=S.filter(p=>p.src===i).length);
+ document.getElementById("cM").textContent=M.length}
+document.getElementById("oBorder").onchange=e=>e.target.checked?border.addTo(map):map.removeLayer(border);
+document.getElementById("oAdmin").onchange=e=>{if(e.target.checked){admin.addTo(map);adminLab.addTo(map)}else{map.removeLayer(admin);map.removeLayer(adminLab)}};
+document.getElementById("oAreas").onchange=e=>e.target.checked?areaLayer.addTo(map):map.removeLayer(areaLayer);
+document.getElementById("oLabels").onchange=e=>e.target.checked?labels.addTo(map):map.removeLayer(labels);
+
+/* ---------- histogram ---------- */
+let YMAX=2026;const YRS=[];const setYears=()=>{const prev=YMAX;YMAX=Math.max(2026,...ALL.map(p=>p.y||0));YRS.length=0;for(let y=2013;y<=YMAX;y++)YRS.push(y);
+ for(const el of [y0,y1])el.max=YMAX;if(st.y1>=prev){y1.value=YMAX;st.y1=YMAX}};
+function hist(){
+ const base=ALL.filter(p=>{const sv=st.yearOnly;st.yearOnly=null;const y0=st.y0,y1=st.y1;st.y0=2013;st.y1=YMAX;const r=pass(p);st.yearOnly=sv;st.y0=y0;st.y1=y1;return r});
+ const cnt=YRS.map(y=>{const o=[0,0,0,0,0,0];base.forEach(p=>{if(p.y===y)o[p.k==="m"?5:p.src]++});return o});
+ const max=Math.max(1,...cnt.map(c=>c.reduce((a,b)=>a+b,0)));
+ document.getElementById("hist").innerHTML=cnt.map((c,i)=>{const y=YRS[i],off=(st.yearOnly&&st.yearOnly!==y)||y<st.y0||y>st.y1;const tot=c.reduce((a,b)=>a+b,0);
+  return `<div class="col${off?" off":""}" data-y="${y}" title="${y}: ${tot} sites">${c.map((v,j)=>v?`<div style="height:${v/max*100}%;background:${j===5?MWC:HEX[j]}"></div>`:"").join("")}</div>`}).join("");
+ document.getElementById("hlab").innerHTML=YRS.map(y=>`<span>${(y%2===0||y===2013)?"’"+String(y).slice(2):""}</span>`).join("");
+}
+document.getElementById("hist").onclick=e=>{const c=e.target.closest(".col");if(!c)return;const y=+c.dataset.y;st.yearOnly=st.yearOnly===y?null:y;render()};
+
+/* ---------- filters ---------- */
+const y0=document.getElementById("y0"),y1=document.getElementById("y1");
+const syncY=()=>{if(+y0.value>+y1.value){if(document.activeElement===y0)y1.value=y0.value;else y0.value=y1.value}st.y0=+y0.value;st.y1=+y1.value;document.getElementById("y0v").textContent=st.y0;document.getElementById("y1v").textContent=st.y1;render()};
+y0.oninput=y1.oninput=syncY;
+document.getElementById("yUnk").onchange=e=>{st.unk=e.target.checked;render()};
+document.querySelectorAll(".fSt").forEach(c=>c.onchange=()=>{st.states=new Set([...document.querySelectorAll(".fSt:checked")].map(x=>x.value));render()});
+document.getElementById("fBasin").innerHTML=D.F.map(b=>`<label class="chk"><input type="checkbox" class="fBa" value="${b}" checked> ${b}</label>`).join("");
+document.querySelectorAll(".fBa").forEach(c=>c.onchange=()=>{st.basins=new Set([...document.querySelectorAll(".fBa:checked")].map(x=>x.value));render()});
+function fillSubs(){const f=document.getElementById("fSub"),cur=f.value;f.innerHTML='<option value="">All sub-basins</option>'+[...new Set(S.map(p=>p.sb))].sort().map(s=>`<option>${esc(s)}</option>`).join("");f.value=cur}
+document.getElementById("fSub").onchange=e=>{st.sub=e.target.value;render()};
+document.getElementById("pits").oninput=e=>{st.pits=+e.target.value;document.getElementById("pitsv").textContent=st.pits;render()};
+document.getElementById("nbOnly").onchange=e=>{st.nb=e.target.checked;render()};
+document.getElementById("reset").onclick=()=>{stopPlay();Object.assign(st,{src:[1,1,1,1,1],mw:0,y0:2013,y1:YMAX,unk:true,states:new Set(["Kachin","Shan"]),basins:new Set(D.F),sub:"",pits:1,nb:false,yearOnly:null});
+ document.querySelectorAll("aside input[type=checkbox]").forEach(c=>{c.checked=!(c.id==="nbOnly"||c.id==="mwOn")});
+ border.addTo(map);admin.addTo(map);adminLab.addTo(map);areaLayer.addTo(map);labels.addTo(map);
+ y0.value=2013;y1.value=YMAX;document.getElementById("fSub").value="";document.getElementById("pits").value=1;document.getElementById("pitsv").textContent=1;syncY()};
+
+/* ---------- timeline play ---------- */
+let timer=null;const playBtn=document.getElementById("play");
+function stopPlay(){if(timer){clearInterval(timer);timer=null;playBtn.textContent="▶ Play timeline"}}
+playBtn.onclick=()=>{if(timer)return stopPlay();st.yearOnly=null;y0.value=2013;let y=2013;y1.value=y;syncY();playBtn.textContent="❚❚ Pause";
+ timer=setInterval(()=>{y++;if(y>YMAX){stopPlay();return}y1.value=y;syncY()},900)};
+
+/* ---------- detail ---------- */
+const det=document.getElementById("detail");
+const fmt=(n,d=5)=>n.toFixed(d);
+function links(p){const ll=`${fmt(p.la)},${fmt(p.lo)}`;
+ return `<div class="links">
+ <a href="https://www.google.com/maps/@${p.la},${p.lo},800m/data=!3m1!1e3" target="_blank" rel="noopener">Google satellite</a>
+ <a href="https://livingatlas.arcgis.com/wayback/#mapCenter=${p.lo}%2C${p.la}%2C16" target="_blank" rel="noopener">Esri Wayback (imagery history)</a>
+ <a href="https://apps.sentinel-hub.com/eo-browser/?zoom=15&lat=${p.la}&lng=${p.lo}" target="_blank" rel="noopener">Sentinel EO Browser</a>
+ <button data-copy="${ll}">Copy coordinates</button></div>`}
+function select(id,fly){
+ const p=byId[id];if(!p)return;
+ if(st.sel&&markers.get(st.sel))markers.get(st.sel).setStyle(styleOf(byId[st.sel],false));
+ st.sel=id;const m=markers.get(id);m.setStyle(styleOf(p,true));if(map.hasLayer(m))m.bringToFront();
+ if(fly)map.flyTo([p.la,p.lo],Math.max(map.getZoom(),15),{duration:.8});
+ const near=p.nn?`<tr><td>Nearest ${p.k==="s"?"Myanmar Witness":"Stimson"} point</td><td><a href="#" data-go="${p.nn}">${p.nn}</a>, ${p.nd<1000?p.nd+" m":(p.nd/1000).toFixed(1)+" km"} away${p.nd<300?" (likely the same site)":""}</td></tr>`:"";
+ const flag=p.nb?`<div class="flag">This point lies ${p.nb} km beyond the coarse Natural Earth border line, on the China side. The source records it in ${p.st}, Myanmar, and the border here follows a ridge the 1:10m line only roughly traces. Check against imagery.</div>`:"";
+ let body;
+ if(p.k==="s"){body=`<div class="small" style="color:${HEX[p.src]}">● Stimson Center dataset</div><h3>Site ${p.id}</h3>${flag}
+  <table><tr><td>Mining method</td><td>In-situ leaching</td></tr><tr><td>Metal</td><td>Rare earth</td></tr>
+  <tr><td>Year in record</td><td>${p.y??"Not recorded"}</td></tr><tr><td>State</td><td>${p.st}</td></tr>
+  <tr><td>River basin</td><td>${p.ba}</td></tr><tr><td>Sub-basin</td><td>${p.sb}</td></tr>
+  <tr><td>Coordinates</td><td>${fmt(p.la)}, ${fmt(p.lo)}</td></tr><tr><td>Credited source</td><td>${p.srcName||D.S[p.src]}</td></tr>${near}</table>`}
+ else{body=`<div class="small" style="color:${MWC}">◯ Myanmar Witness / Mizzima</div><h3>Site ${p.id}</h3>${flag}
+  <table><tr><td>Location</td><td>${p.tw} Township, ${p.st} State</td></tr><tr><td>Built by</td><td>${p.y} (first visible in Google Earth imagery)</td></tr>
+  <tr><td>Pits counted</td><td>${p.pits}</td></tr><tr><td>Coordinates</td><td>${fmt(p.la)}, ${fmt(p.lo)}</td></tr>${near}</table>
+  <a href="https://info-res.maps.arcgis.com/sharing/rest/content/items/${p.img}/data" target="_blank" rel="noopener"><img alt="Myanmar Witness satellite image of site ${p.id}" src="https://info-res.maps.arcgis.com/sharing/rest/content/items/${p.img}/data" loading="lazy" onerror="this.remove()"></a>
+  <div class="small">Image: Myanmar Witness (CIR). Click to enlarge.</div>`}
+ det.innerHTML=`<button class="x" aria-label="Close details">×</button>${body}${links(p)}`;det.classList.add("on");
+}
+det.onclick=e=>{
+ if(e.target.closest(".x")){det.classList.remove("on");if(st.sel)markers.get(st.sel).setStyle(styleOf(byId[st.sel],false));st.sel=null;return}
+ const g=e.target.closest("[data-go]");if(g){e.preventDefault();select(g.dataset.go,true);return}
+ const c=e.target.closest("[data-copy]");if(c){navigator.clipboard?.writeText(c.dataset.copy).then(()=>c.textContent="Copied",()=>c.textContent=c.dataset.copy)}
+};
+document.getElementById("q").onkeydown=e=>{if(e.key!=="Enter")return;let v=e.target.value.trim().toUpperCase();if(/^S\d+$/.test(v))v="S"+v.slice(1).padStart(3,"0");if(/^RE\d+$/.test(v))v="RE"+v.slice(2).padStart(4,"0");
+ if(byId[v])select(v,true);else e.target.value="",e.target.placeholder="No site "+v+". Try S120 or RE0045"};
+
+/* ---------- areas & reports ---------- */
+function flyArea(i){const a=AREAS[i];map.flyTo(a.c,a.z,{duration:1})}
+function renderAreas(){document.getElementById("areaList").innerHTML=AREAS.map((a,i)=>{
+ const n=ALL.filter(p=>Math.abs(p.la-a.c[0])<(a.z>=13?.04:a.z>=12?.12:a.z>=11?.2:.3)&&Math.abs(p.lo-a.c[1])<(a.z>=13?.05:a.z>=12?.15:a.z>=11?.25:.35));
+ return `<div class="card"><h3>${a.n}</h3><div class="meta">${a.st} State · ${n.filter(p=>p.k==="s").length} Stimson / ${n.filter(p=>p.k==="m").length} Myanmar Witness points in view</div><p>${a.d}</p>
+ <div class="links"><button data-area="${i}">Zoom to area</button>${a.l.map(l=>`<a href="${l[1]}" target="_blank" rel="noopener">${l[0]}</a>`).join("")}</div></div>`}).join("")}
+renderAreas();
+document.getElementById("areaList").onclick=e=>{const b=e.target.closest("[data-area]");if(b){flyArea(+b.dataset.area);if(innerWidth<820)scrollTo({top:0,behavior:"smooth"})}};
+const fdateR=d=>!d?"":/^\d{4}$/.test(d)?d:/^\d{4}-\d{2}$/.test(d)?`${MON[+d.slice(5,7)-1]} ${d.slice(0,4)}`:`${+d.slice(8,10)} ${MON[+d.slice(5,7)-1]} ${d.slice(0,4)}`;
+function renderReports(list){const now=Date.now();
+ list=[...list].sort((a,b)=>(b.date||"0").localeCompare(a.date||"0"));
+ document.getElementById("repList").innerHTML=list.map(r=>{const isNew=r.added&&now-Date.parse(r.added)<30*864e5&&r.added>"2026-11-20";
+  return `<div class="rep"><span class="tag">${esc(r.type)}</span>${isNew?'<span class="tag" style="color:var(--acc);border-color:var(--acc)">New</span>':""}<span class="meta">${esc(r.org)}${r.date?" · "+fdateR(r.date):""}</span><br><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>${r.note?`<p>${esc(r.note)}</p>`:""}</div>`}).join("")}
+
+/* ---------- BVC archive ---------- */
+const linkify=s=>esc(s).replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" rel="noopener">${u.length>48?u.slice(0,45)+"…":u}</a>`);
+const fdate=d=>!d?"Undated":/^\d{4}$/.test(d)?d:/^\d{4}-\d{2}$/.test(d)?`${MON[+d.slice(5,7)-1]} ${d.slice(0,4)}`:/^\d{4}-\d{2}-\d{2}$/.test(d)?`${+d.slice(8,10)} ${MON[+d.slice(5,7)-1]} ${d.slice(0,4)}`:d;
+const normSrc=s=>s.replace(/^ISP-Myanmar$/,"ISP Myanmar");
+const toArc=r=>({d:r[0],t:r[1],s:normSrc(r[2]),a:r[3],n:r[4],u:r[5],y:r[0]?r[0].slice(0,4):"Undated"});
+let A=ARC.map(toArc);
+const arSrc=document.getElementById("arSrc"),arYr=document.getElementById("arYr"),arQ=document.getElementById("arQ");
+function fillArcFilters(){const s=arSrc.value,y=arYr.value;
+ arSrc.innerHTML='<option value="">All sources</option>'+[...new Set(A.map(x=>x.s))].sort((a,b)=>a.localeCompare(b)).map(s=>`<option>${esc(s)}</option>`).join("");
+ arYr.innerHTML='<option value="">All years</option>'+[...new Set(A.map(x=>x.y))].sort().reverse().map(y=>`<option>${y}</option>`).join("");arSrc.value=s;arYr.value=y}
+fillArcFilters();
+const normDate=v=>{v=(v||"").trim();if(!v)return"";if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);if(/^\d{4}(-\d{2})?$/.test(v))return v;
+ let m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return `${m[3]}-${m[1].padStart(2,"0")}-${m[2].padStart(2,"0")}`;const t=Date.parse(v);return isNaN(t)?v:new Date(t).toISOString().slice(0,10)};
+/* The BVC sheet is read through Google's CSV export (columns A–F only). Unlike the gviz endpoint, it keeps the section header rows
+   ("Articles and Reports", "Social Media") and dates exactly as typed. Only rows under "Articles and Reports" are shown. */
+const BVC_SECTION=/^articles and reports$/i;
+async function liveArchive(){const rows=parseCSV(await getText(`https://docs.google.com/spreadsheets/d/${BVC_SHEET}/export?format=csv&gid=${BVC_GID}&range=A1:F5000&_=${Date.now()}`));const h=rows.shift().map(x=>x.trim().toLowerCase());
+ if(!(h[1]==="title"&&h[5]==="link"))throw Error("unexpected columns: "+h.join("|"));
+ let sec=null;const kept=[];
+ for(const r of rows){const isHead=(r[0]||"").trim()&&!r.slice(1).some(x=>(x||"").trim());
+  if(isHead){sec=r[0].trim();continue}if(sec&&BVC_SECTION.test(sec))kept.push(r)}
+ if(sec===null)throw Error("no section headers found");
+ rows.length=0;rows.push(...kept);
+ const snapDate=Object.fromEntries(ARC.filter(r=>r[0]).map(r=>[r[5],r[0]]));
+ const out=rows.filter(r=>r.length>=6&&r[1].trim()&&r[5].trim()).map(r=>{const c=x=>(x||"").replace(/\s+/g," ").trim();const link=c(r[5]);
+  return [normDate(r[0])||snapDate[link]||"",c(r[1]),c(r[2]),c(r[3]),c(r[4]),link]});
+ if(out.length<10)throw Error("only "+out.length+" rows");return out.sort((a,b)=>(b[0]||"0").localeCompare(a[0]||"0"))}
+function renderArc(){const q=arQ.value.trim().toLowerCase(),s=arSrc.value,y=arYr.value;
+ const list=A.filter(x=>(!s||x.s===s)&&(!y||x.y===y)&&(!q||(x.t+" "+x.s+" "+x.a+" "+x.n).toLowerCase().includes(q)));
+ document.getElementById("arN").textContent=`${list.length} of ${A.length} items.`;
+ document.getElementById("arList").innerHTML=list.length?list.map(x=>`<div class="arc"><span class="meta">${fdate(x.d)} · ${esc(x.s)}${x.a?" · "+esc(x.a):""}</span><br><a href="${esc(x.u)}" target="_blank" rel="noopener">${esc(x.t)}</a>${/\.pdf($|\?)/i.test(x.u)?' <span class="tag">PDF</span>':""}${x.n?`<p>${linkify(x.n)}</p>`:""}</div>`).join(""):'<p class="small">No items match.</p>'}
+arQ.oninput=arSrc.onchange=arYr.onchange=renderArc;renderArc();
+
+/* ---------- tabs ---------- */
+document.querySelector("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+ document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+ document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.id==="t-"+b.dataset.t))};
+
+/* ---------- export ---------- */
+function geojson(){return JSON.stringify({type:"FeatureCollection",features:visible.map(p=>({type:"Feature",geometry:{type:"Point",coordinates:[p.lo,p.la]},
+ properties:p.k==="s"?{id:p.id,dataset:"Stimson Center",method:"In-situ Leaching",metal:"Rare Earth",year:p.y,state:p.st,basin:p.ba,sub_basin:p.sb,source:p.srcName||D.S[p.src],near_border_km:p.nb||0}
+ :{id:p.id,dataset:"Myanmar Witness/Mizzima",township:p.tw,state:p.st,built_by_year:p.y,pits:p.pits,near_border_km:p.nb||0}}))})}
+document.getElementById("dl").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([geojson()],{type:"application/geo+json"}));a.download="burma_ree_mines_filtered.geojson";document.body.appendChild(a);a.click();a.remove()};
+document.getElementById("cp").onclick=()=>{const m=document.getElementById("cpmsg");navigator.clipboard?.writeText(geojson()).then(()=>m.textContent=`Copied ${visible.length} features.`,()=>m.textContent="Clipboard blocked in this viewer. Use Download instead.")};
+
+fillSubs();setYears();syncY();renderReports(REPS_SNAP);
+const b=L.latLngBounds(ALL.map(p=>[p.la,p.lo]));map.fitBounds(b.pad(.08));
+
+/* ---------- load the latest data ---------- */
+const stamp=()=>new Date().toLocaleString([], {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const status={};const SNAP_DATE="{{SNAPSHOT_DATE}}";
+function showStatus(){const part=(k,lab)=>status[k]==="live"?`${lab}: live`:status[k]==="snap"?`${lab}: saved copy (${SNAP_DATE})`:`${lab}: loading…`;
+ document.getElementById("dstat").textContent=[part("s","Stimson"),part("m","Myanmar Witness"),part("a","BVC Archive"),part("r","Reports")].join(" · ")+(Object.values(status).includes("live")?` · checked ${stamp()}`:"");
+ document.getElementById("dsrc").innerHTML=Object.entries({s:"Stimson sheet",m:"Myanmar Witness ArcGIS layer",a:"BVC Archive sheet",r:"reports.json"}).map(([k,l])=>`<li>${l}: <b>${status[k]==="live"?"loaded live":status[k]==="snap"?"unavailable, using the copy saved "+SNAP_DATE:"loading"}</b>${status.err&&status.err[k]?` <span class="small">(${esc(status.err[k])})</span>`:""}</li>`).join("")}
+status.err={};
+(async()=>{
+ const [rs,rm,ra,rr]=await Promise.allSettled([liveStimson(),liveMW(),liveArchive(),fetch("reports.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("HTTP "+r.status);return r.json()})]);
+ if(rs.status==="fulfilled"||rm.status==="fulfilled"){
+  if(rs.status==="fulfilled")S=rs.value;if(rm.status==="fulfilled")M=rm.value;
+  for(const p of [...S,...M])p.nb=kmOutside(p.la,p.lo);crossRef(S,M);crossRef(M,S);
+  ALL=[...S,...M];byId=Object.fromEntries(ALL.map(p=>[p.id,p]));
+  document.getElementById("ovl").textContent=M.filter(m=>m.nd<300).length;
+  const sel=st.sel;st.sel=null;buildMarkers();fillSubs();setYears();syncY();renderAreas();if(sel&&byId[sel]&&det.classList.contains("on"))select(sel,false)}
+ status.s=rs.status==="fulfilled"?"live":"snap";status.m=rm.status==="fulfilled"?"live":"snap";
+ if(ra.status==="fulfilled"){A=ra.value.map(toArc);fillArcFilters();renderArc()}status.a=ra.status==="fulfilled"?"live":"snap";
+ if(rr.status==="fulfilled"&&Array.isArray(rr.value)&&rr.value.length)renderReports(rr.value);status.r=rr.status==="fulfilled"?"live":"snap";
+ [["s",rs],["m",rm],["a",ra],["r",rr]].forEach(([k,r])=>{if(r.status==="rejected")status.err[k]=String(r.reason&&r.reason.message||r.reason)});
+ showStatus()})();
+}
+</script>
+</body>
+</html>

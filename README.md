@@ -6,8 +6,12 @@ A satellite-map dashboard of in-situ leach rare earth mines in Kachin and Shan s
 
 | File | What it is |
 |---|---|
-| `index.html` | The whole dashboard in one page (Leaflet map, tabs and saved copies of the data). |
+| `index.html` | The whole dashboard in one page (Leaflet map, tabs and saved copies of the data). Built by `build.py`; don't edit it by hand. |
 | `reports.json` | The **Reports** tab: references found by Claude. The scheduled Reports task adds to this file. |
+| `src/template.html` | Source for `index.html`: markup, styles and script. |
+| `src/data/` | The saved copies of the data embedded as fallbacks, plus state and province boundaries. |
+| `build.py` | Builds `index.html` from `src/` and `reports.json`. Run `python3 build.py`; `--check` confirms the built file is current. |
+| `CLAUDE.md` | Working notes for Claude sessions that maintain this repository. |
 
 ## Where the data comes from
 
