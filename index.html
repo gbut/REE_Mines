@@ -138,7 +138,7 @@ code{font-size:12px;overflow-wrap:anywhere}
   <label class="lyr"><input type="checkbox" id="oAreas" checked><span class="sw" style="background:var(--acc)"></span><span>Mining-area labels</span><small>8</small></label>
   <label class="lyr"><input type="checkbox" id="oLabels" checked><span class="sw" style="background:#fff"></span><span>Place names &amp; borders (Esri)</span><small></small></label>
   <h2>Find a site</h2>
-  <input type="search" id="q" placeholder="Site ID, e.g. S120 or RE0045" aria-label="Find site by ID">
+  <input type="search" id="q" placeholder="Site ID, e.g. S0634 or RE0045" aria-label="Find site by ID">
   <h2>Mines by first year in the record</h2>
   <div class="hist" id="hist"></div>
   <div class="hlab" id="hlab"></div>
@@ -162,6 +162,15 @@ code{font-size:12px;overflow-wrap:anywhere}
   <h2>Pits per site (Myanmar Witness only)</h2>
   <label for="pits" class="small">At least <b id="pitsv">1</b> pits</label>
   <input type="range" id="pits" min="1" max="30" value="1">
+  <h2>Updates (Stimson only)</h2>
+  <select id="fUpd" aria-label="Filter Stimson sites by update">
+   <option value="">All Stimson sites</option>
+   <option value="lu90">Stimson “Last Updated” in the last 90 days</option>
+   <option value="lu365">Stimson “Last Updated” in the last 12 months</option>
+   <option value="lu">Any Stimson “Last Updated” date</option>
+   <option value="chg">Changed since this dashboard began tracking</option>
+  </select>
+  <p class="small">“Last Updated” is the date Stimson enters in its sheet. It doesn't say what changed. “Changed since tracking began” comes from the weekly comparison of the sheet with the previous saved copy; the Data tab lists those changes.</p>
   <h2>Border proximity</h2>
   <label class="chk"><input type="checkbox" id="nbOnly"> Show only points flagged near the China border</label>
   <p class="small">Points that fall up to 4 km on the Chinese side of the coarse Natural Earth border line are kept (every source records them in Kachin State) but flagged.</p>
@@ -188,12 +197,15 @@ code{font-size:12px;overflow-wrap:anywhere}
 
  <section class="tab" id="t-about">
   <h2>What's mapped</h2>
-  <p><b>Stimson Center</b> — “Mining in Southeast Asia” sheet behind the Stimson mining dashboard (Planet Labs imagery). The sheet has 2,839 rows covering Cambodia, Laos and Myanmar and several mining methods. Only rows with <code>Country = Myanmar</code> and <code>Metal = Rare Earth</code> are shown (604 rows, all in-situ leaching, all in Kachin or Shan). Laos rows, alluvial, heap-leach, gold, jade, manganese, tungsten and unknown rows are left out.</p>
-  <p><b>Myanmar Witness / Centre for Information Resilience, with Mizzima</b> — public ArcGIS layer behind the “Rare Earth Mining Map” (237 sites in Chipwi and Momauk townships, Kachin; with pit counts and the year each site was visible by).</p>
-  <p class="small">The two layers overlap heavily: Stimson credits Myanmar Witness for many Kachin points, and <b id="ovl"></b> of the 237 Myanmar Witness sites sit within 300 m of a Stimson point. Each detail card names the nearest point in the other layer, so you can compare them.</p>
+  <p><b>Stimson Center</b> — “Mining in Southeast Asia” sheet behind the Stimson mining dashboard (Planet Labs imagery). The sheet has <b id="nTot">–</b> rows covering Cambodia, Laos and Myanmar and several mining methods. Only rows with <code>Country = Myanmar</code> and <code>Metal = Rare Earth</code> are shown (<b id="nS">–</b> rows, in <span id="nSt">Kachin and Shan</span>). Laos rows, alluvial, heap-leach, gold, jade, manganese, tungsten and unknown rows are left out.</p>
+  <p><b>Myanmar Witness / Centre for Information Resilience, with Mizzima</b> — public ArcGIS layer behind the “Rare Earth Mining Map” (<b id="nM">–</b> sites in <span id="nTw">–</span>; with pit counts and the year each site was visible by).</p>
+  <p class="small">The two layers overlap heavily: Stimson credits Myanmar Witness for many Kachin points, and <b id="ovl"></b> of the <span id="nM2">–</span> Myanmar Witness sites sit within 300 m of a Stimson point. Each detail card names the nearest point in the other layer, so you can compare them.</p>
   <h2>Live data status</h2>
   <ul class="small" id="dsrc"></ul>
-  <p class="small">Each time the page opens, it fetches the latest Stimson sheet rows, the Myanmar Witness layer, the BVC Archive sheet and the Reports list. If a source can't be reached, the page uses the copy saved inside it. Stimson site IDs follow sheet row order.</p>
+  <p class="small">Each time the page opens, it fetches the latest Stimson sheet rows, the Myanmar Witness layer, the BVC Archive sheet and the Reports list. If a source can't be reached, the page uses the copy saved inside it. A Stimson site's ID is its row number in Stimson's sheet (S0634 is row 634), so it stays the same when Stimson edits that row or others. IDs move only if Stimson inserts or deletes rows above it; the change list below records when that happens.</p>
+  <h2>Changes to Stimson's rows</h2>
+  <p class="small" id="chgNote"></p>
+  <div id="chgList"></div>
   <h2>Caveats</h2>
   <ul class="small">
    <li>Points mark mine sites, not their footprints. One site can have dozens of leach pools.</li>
@@ -234,7 +246,7 @@ const AREAS=[
  {n:"Pangwa – Kachin Special Region 1",c:[25.67,98.34],z:12,st:"Kachin",d:"The world's densest cluster of heavy rare earth leach mines, along the China border in Chipwi Township. It was run by the junta-aligned NDA-K militia until the Kachin Independence Army took Pangwa on 19 October 2024. Landslides at sites here killed around 50 people in 2024.",l:[["Global Witness, 2022","https://globalwitness.org/en/campaigns/natural-resource-governance/myanmars-poisoned-mountains"],["Myanmar Witness","https://www.info-res.org/articles/uncovered-the-devastating-impact-of-myanmars-rare-earth-mining-boom/"],["Crisis Group","https://crisisgroup.org/visual-explainers/critical-minerals-myanmar/rare-earths/"]]},
  {n:"Northern Chipwi (Ngaw Chaing Hka)",c:[25.88,98.45],z:11,st:"Kachin",d:"Mines spreading north and east of Pangwa toward Chipwi town, mostly first recorded between 2020 and 2025. Myanmar Witness logged a 2024 wave of new sites here, at around 25.9–26.0°N.",l:[["Myanmar Witness map","https://info-res.org/myanmar-witness/maps/rare-earth-mining-map"]]},
  {n:"Momauk Township (KIO)",c:[24.33,97.62],z:12,st:"Kachin",d:"Southern Kachin cluster in Kachin Independence Organisation territory. Global Witness reported a sharp rise in sites here in 2024. A few sites date back to 2013–2015 imagery.",l:[["Global Witness, 2024","https://www.globalwitness.org/en/campaigns/natural-resource-governance/fuelling-the-future-poisoning-the-present-myanmars-rare-earth-boom/"]]},
- {n:"Irrawaddy mainstream, east of Myitkyina",c:[25.39,98.05],z:13,st:"Kachin",d:"About 65 km east of Myitkyina. Four Stimson points credited to USGS, draining directly into the Irrawaddy mainstream.",l:[]},
+ {n:"Irrawaddy mainstream, east of Myitkyina",c:[25.39,98.05],z:13,st:"Kachin",d:"About 65 km east of Myitkyina. A small group of Stimson points credited to USGS, draining directly into the Irrawaddy mainstream.",l:[]},
  {n:"Mantong Township – TNLA-held northern Shan",c:[23.40,97.20],z:10,st:"Shan",d:"Newest frontier. Stimson found at least 12 rare earth mines and new roads to the China border in TNLA territory, with collection pools appearing from December 2025.",l:[["Stimson, Jul 2026","https://stimson.org/2026/rare-earth-mining-in-myanmar-expands-to-tnla-held-territory/"]]},
  {n:"Mong Pawk – Wa region (Nam Lwe headwaters)",c:[21.92,99.33],z:11,st:"Shan",d:"United Wa State Army territory at the head of the Nam Lwe, a Mekong tributary. Stimson counted 31 mines here in 2025. Downstream farmland at Mong Khark was buried in mud during July 2025 floods.",l:[["Stimson, Sep 2025","https://stimson.org/2025/toxic-rare-earth-mining-is-ruining-mekong-tributaries-in-the-golden-triangle/"],["Irrawaddy, Sep 2025","https://www.irrawaddy.com/?p=149614"]]},
  {n:"Mong Yawng – NDAA Special Region 4",c:[21.43,100.50],z:11,st:"Shan",d:"Eastern Shan, under 40 km from the Mekong. SHRF counted 19 in-situ leach mines in May 2025, up from three in 2021.",l:[["BNI / SHRF, Aug 2025","https://www.bnionline.net/en/news/shrf-says-satellite-images-show-ndaa-controls-19-new-rare-earth-mines"]]},
@@ -378,14 +390,56 @@ const REPS_SNAP=[
   "added": "2026-11-23"
  }
 ];
+const CHG_SNAP={
+ "baseline": null,
+ "changes": []
+};
 
 /* ---------- data ---------- */
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-let S=D.s.map(r=>({k:"s",id:r[0],y:r[1],st:D.P[r[2]],ba:D.F[r[3]],sb:D.B[r[4]],la:r[5],lo:r[6],src:r[7],nb:r[8],nn:r[9],nd:r[10]}));
+let S=D.s.map(r=>({k:"s",id:r[0],row:/^S\d{4,}$/.test(r[0])?+r[0].slice(1):null,y:r[1],st:D.P[r[2]],ba:D.F[r[3]],sb:D.B[r[4]],la:r[5],lo:r[6],src:r[7],srcName:r[12]||D.S[r[7]],nb:r[8],nn:r[9],nd:r[10],lu:r[11]||""}));
 let M=D.m.map(r=>({k:"m",id:r[0],la:r[1],lo:r[2],y:r[3],pits:r[4],tw:D.T[r[5]][0],st:D.T[r[5]][1],img:r[6],nb:r[7],nn:r[8],nd:r[9]}));
 let ALL=[...S,...M], byId=Object.fromEntries(ALL.map(p=>[p.id,p]));
 document.getElementById("ovl").textContent=M.filter(m=>m.nd<300).length;
+
+/* ---------- Stimson change log (changes.json, written by the weekly refresh workflow) ---------- */
+let CHG={log:{baseline:null,changes:[]},byId:{}};
+function indexChanges(log){
+ /* Walk the log oldest first. A "renumbered" entry moves earlier history to the row's new ID, so each site's history follows it. */
+ const byId={},dates=[...new Set(log.changes.map(e=>e.date))].sort();
+ for(const d of dates){const day=log.changes.filter(e=>e.date===d);
+  for(const r of day.filter(e=>e.kind==="renumbered")){const moved={};for(const [o,n] of r.ids)if(byId[o]){moved[n]=byId[o];delete byId[o]}
+   for(const [n,h] of Object.entries(moved)){byId[n]=h;h.forEach(e=>e._cur=n)}}
+  for(const e of day.filter(e=>e.kind==="edited"||e.kind==="added")){e._cur=e.id;(byId[e.id]=byId[e.id]||[]).unshift(e)}}
+ CHG={log,byId}}
+indexChanges(CHG_SNAP||CHG.log);
+const fv=v=>v===null||v===undefined||v===""?"—":esc(v);
+function chgLine(e){const f=Object.entries(e.fields||{});
+ if(e.kind==="added")return `<li>${fdate(e.date)}: added to the sheet's Burma rare earth rows</li>`;
+ return `<li>${fdate(e.date)}: ${f.map(([k,[a,b]])=>`${esc(k)} ${fv(a)} → ${fv(b)}`).join("; ")||"edited"}${e.prev_id?` (row was ${esc(e.prev_id)} before renumbering)`:""}</li>`}
+function renderChanges(){const {log}=CHG,list=document.getElementById("chgList"),note=document.getElementById("chgNote");
+ if(!log.baseline){note.textContent="The weekly comparison hasn't run yet. Once it has, edits, additions and removals in Stimson's Burma rare earth rows will be listed here.";list.innerHTML="";return}
+ const real=log.changes.filter(e=>e.kind!=="renumbered");
+ note.textContent=`Tracking since ${fdate(log.baseline)}. Each week the sheet is compared with the previous saved copy. ${real.length?real.length+" change"+(real.length>1?"s":"")+" recorded":"No changes recorded yet"}.`;
+ const dates=[...new Set(log.changes.map(e=>e.date))].sort().reverse();
+ const go=(e,id)=>e._cur&&byId[e._cur]?`<a href="#" data-go="${e._cur}">${esc(id)}</a>`:esc(id);
+ list.innerHTML=dates.slice(0,12).map(d=>{const day=log.changes.filter(e=>e.date===d);
+  return `<div class="arc"><span class="meta">${fdate(d)}</span><ul class="small" style="margin:4px 0 0;padding-left:18px">${day.map(e=>{const f=Object.entries(e.fields||{});
+   if(e.kind==="renumbered")return `<li>${e.ids.length} row${e.ids.length>1?"s":""} renumbered because rows above ${e.ids.length>1?"them":"it"} were inserted or deleted (for example ${esc(e.ids[0][0])} → ${esc(e.ids[0][1])}).</li>`;
+   if(e.kind==="removed")return `<li><b>${esc(e.id)}</b> removed from the Burma rare earth rows${e.fields&&e.fields.latitude?` (was at ${fv(e.fields.latitude[0])}, ${fv(e.fields.longitude[0])}, ${fv(e.fields.state&&e.fields.state[0])})`:""}.</li>`;
+   if(e.kind==="added")return `<li><b>${go(e,e.id)}</b> added${e.fields&&e.fields.latitude?` at ${fv(e.fields.latitude[1])}, ${fv(e.fields.longitude[1])}`:""}.</li>`;
+   return `<li><b>${go(e,e.id)}</b>${e.prev_id?` (was ${esc(e.prev_id)})`:""}: ${f.map(([k,[a,b]])=>`${esc(k)} ${fv(a)} → ${fv(b)}`).join("; ")}</li>`}).join("")}</ul></div>`}).join("")+(dates.length>12?`<p class="small">Older changes are in <a href="changes.json" target="_blank" rel="noopener">changes.json</a>.</p>`:"")}
+document.getElementById("chgList").onclick=e=>{const g=e.target.closest("[data-go]");if(g){e.preventDefault();select(g.dataset.go,true)}};
+
+/* ---------- counts in the Data tab, from whatever data is loaded ---------- */
+const andList=a=>a.length<2?a.join(""):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+function renderCounts(){const t=id=>document.getElementById(id);
+ t("nTot").textContent=STIM_TOTAL?STIM_TOTAL.toLocaleString("en-US"):"several thousand";
+ t("nS").textContent=S.length.toLocaleString("en-US");t("nSt").textContent=andList([...new Set(S.map(p=>p.st))].sort());
+ t("nM").textContent=t("nM2").textContent=M.length;
+ const tw={};M.forEach(p=>{(tw[p.st]=tw[p.st]||new Set()).add(p.tw)});
+ t("nTw").textContent=Object.entries(tw).map(([s,set])=>`${andList([...set].sort())} township${set.size>1?"s":""}, ${s}`).join("; ")}
 
 /* ---------- live sources ---------- */
 const STIMSON_SHEET="1bfGeMKv3piuMtmnJJq_XW3cBwVwtYISSjX1o4jqRLZE",STIMSON_GID="1355866538";
@@ -409,13 +463,23 @@ function kmOutside(la,lo){if(inPoly(lo,la))return 0;const kx=111.32*Math.cos(la*
  return Math.round(best*10)/10}
 const hav=(a,b,c,d)=>{const R=6371e3,r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(x)))};
 function crossRef(A,B){for(const p of A){let best=[null,1e12];for(const q of B){const d=hav(p.la,p.lo,q.la,q.lo);if(d<best[1])best=[q.id,d]}p.nn=best[0];p.nd=best[0]?best[1]:null}}
+/* Stimson: the whole sheet is read and filtered here, so each site's ID can be its sheet row number (S0634 = row 634; the header is row 1).
+   IDs then survive edits and re-tagging of other rows; they only move if Stimson inserts or deletes rows above.
+   The CSV export is tried first; gviz "select *" (every row, in sheet order) is the fallback. Columns are found by header name. */
+let STIM_TOTAL=D.meta?D.meta.stimson_sheet_rows:null;
 async function liveStimson(){
- const rows=parseCSV(await getText(gviz(STIMSON_SHEET,STIMSON_GID,"select C,E,F,G,H,I,J where D='Myanmar' and B='Rare Earth'")));
- const h=rows.shift().map(x=>x.trim().toLowerCase());
- if(!(h[0].startsWith("year")&&h[4].startsWith("lat")&&h[5].startsWith("lon")))throw Error("unexpected columns: "+h.join("|"));
- const out=rows.map((r,i)=>[r,i]).filter(([r])=>r.length>=6&&r[4]!==""&&r[5]!==""&&!isNaN(+r[4])).map(([r,i])=>{const src=D.S.indexOf((r[6]||"").trim()||"(not given)");
-  return {k:"s",id:"S"+String(i+1).padStart(3,"0"),y:r[0]?Math.round(+r[0]):null,st:r[1].trim(),ba:r[2].trim(),sb:r[3]?r[3].replace(" (Myanmar)","").trim():"",la:+(+r[4]).toFixed(5),lo:+(+r[5]).toFixed(5),src:src<0?4:src,srcName:(r[6]||"").trim()}});
- if(out.length<100)throw Error("only "+out.length+" rows");return out}
+ let text;try{text=await getText(`https://docs.google.com/spreadsheets/d/${STIMSON_SHEET}/export?format=csv&gid=${STIMSON_GID}&_=${Date.now()}`)}
+ catch(e){text=await getText(gviz(STIMSON_SHEET,STIMSON_GID,"select *"))}
+ const rows=parseCSV(text);const h=rows.shift().map(x=>x.trim().toLowerCase());
+ const col=n=>h.findIndex(x=>x.startsWith(n)),C={metal:col("metal"),year:col("year"),country:col("country"),st:col("province"),ba:h.indexOf("basin"),sb:col("sub-basin"),la:col("lat"),lo:col("lon"),src:col("source"),lu:col("last updated")};
+ if([C.metal,C.country,C.la,C.lo].some(i=>i<0))throw Error("unexpected columns: "+h.join("|"));
+ const g=(r,k)=>C[k]>=0?(r[C[k]]||"").trim():"";let total=0;const out=[];
+ rows.forEach((r,i)=>{if(!r.some(x=>(x||"").trim()))return;total++;
+  if(g(r,"country")!=="Myanmar"||g(r,"metal")!=="Rare Earth")return;const la=parseFloat(g(r,"la")),lo=parseFloat(g(r,"lo"));if(isNaN(la)||isNaN(lo))return;
+  const sn=g(r,"src")||"(not given)",src=D.S.indexOf(sn),y=g(r,"year");
+  out.push({k:"s",id:"S"+String(i+2).padStart(4,"0"),row:i+2,y:/^\d+(\.\d+)?$/.test(y)?Math.round(+y):null,st:g(r,"st"),ba:g(r,"ba"),sb:g(r,"sb").replace(" (Myanmar)","").trim(),
+   la:+la.toFixed(5),lo:+lo.toFixed(5),src:src<0?4:src,srcName:sn,lu:normDate(g(r,"lu"))})});
+ if(out.length<100)throw Error("only "+out.length+" rows");STIM_TOTAL=total;return out}
 async function liveMW(){const d=JSON.parse(await getText(MW_URL));if(!d.features||!d.features.length)throw Error("no features");
  return d.features.map(f=>{const a=f.attributes,m=(a.Description||"").match(/located in ([^,]+), ([^,]+?)(?: State)?,/),img=(a.Site_Image||"").match(/items\/([0-9a-f]{32})/);
   return {k:"m",id:a.Site_ID,la:+f.geometry.y.toFixed(5),lo:+f.geometry.x.toFixed(5),y:a.Year,pits:a.Number_of_Pits||0,tw:m?m[1]:"Unknown",st:m?m[2]:"Kachin",img:img?img[1]:""}})}
@@ -453,7 +517,8 @@ function buildMarkers(){for(const m of markers.values())map.removeLayer(m);marke
 buildMarkers();
 
 /* ---------- state ---------- */
-const st={src:[1,1,1,1,1],mw:0,y0:2013,y1:2026,unk:true,states:new Set(["Kachin","Shan"]),basins:new Set(D.F),sub:"",pits:1,nb:false,sel:null,yearOnly:null};
+const st={src:[1,1,1,1,1],mw:0,y0:2013,y1:2026,unk:true,states:new Set(["Kachin","Shan"]),baOff:new Set(),sub:"",pits:1,nb:false,upd:"",sel:null,yearOnly:null};
+const daysAgo=d=>{const t=Date.parse(d);return isNaN(t)?Infinity:(Date.now()-t)/864e5};
 const pass=p=>{
  if(p.k==="s"&&!st.src[p.src])return false;
  if(p.k==="m"&&!st.mw)return false;
@@ -461,7 +526,9 @@ const pass=p=>{
  if(st.nb&&!p.nb)return false;
  if(p.y==null){if(!st.unk||st.yearOnly)return false}
  else{if(st.yearOnly&&p.y!==st.yearOnly)return false;if(p.y<st.y0||p.y>st.y1)return false}
- if(p.k==="s"){if(!st.basins.has(p.ba))return false;if(st.sub&&p.sb!==st.sub)return false}
+ if(p.k==="s"){if(st.baOff.has(p.ba))return false;if(st.sub&&p.sb!==st.sub)return false;
+  if(st.upd==="lu"&&!p.lu)return false;if(st.upd==="lu90"&&!(daysAgo(p.lu)<=90))return false;if(st.upd==="lu365"&&!(daysAgo(p.lu)<=365))return false;
+  if(st.upd==="chg"&&!CHG.byId[p.id])return false}
  if(p.k==="m"&&p.pits<st.pits)return false;
  return true};
 let visible=[];
@@ -510,13 +577,17 @@ const syncY=()=>{if(+y0.value>+y1.value){if(document.activeElement===y0)y1.value
 y0.oninput=y1.oninput=syncY;
 document.getElementById("yUnk").onchange=e=>{st.unk=e.target.checked;render()};
 document.querySelectorAll(".fSt").forEach(c=>c.onchange=()=>{st.states=new Set([...document.querySelectorAll(".fSt:checked")].map(x=>x.value));render()});
-document.getElementById("fBasin").innerHTML=D.F.map(b=>`<label class="chk"><input type="checkbox" class="fBa" value="${b}" checked> ${b}</label>`).join("");
-document.querySelectorAll(".fBa").forEach(c=>c.onchange=()=>{st.basins=new Set([...document.querySelectorAll(".fBa:checked")].map(x=>x.value));render()});
+/* Basin boxes are built from the loaded rows, so a basin Stimson adds or renames still shows up. */
+const fBasin=document.getElementById("fBasin");
+function fillBasins(){const order=[...D.F,...[...new Set(S.map(p=>p.ba))].filter(b=>!D.F.includes(b)).sort()].filter(b=>S.some(p=>p.ba===b));
+ fBasin.innerHTML=order.map(b=>`<label class="chk"><input type="checkbox" class="fBa" value="${esc(b)}"${st.baOff.has(b)?"":" checked"}> ${esc(b||"(not given)")}</label>`).join("")}
+fBasin.onchange=()=>{st.baOff=new Set([...fBasin.querySelectorAll(".fBa:not(:checked)")].map(x=>x.value));render()};
+document.getElementById("fUpd").onchange=e=>{st.upd=e.target.value;render()};
 function fillSubs(){const f=document.getElementById("fSub"),cur=f.value;f.innerHTML='<option value="">All sub-basins</option>'+[...new Set(S.map(p=>p.sb))].sort().map(s=>`<option>${esc(s)}</option>`).join("");f.value=cur}
 document.getElementById("fSub").onchange=e=>{st.sub=e.target.value;render()};
 document.getElementById("pits").oninput=e=>{st.pits=+e.target.value;document.getElementById("pitsv").textContent=st.pits;render()};
 document.getElementById("nbOnly").onchange=e=>{st.nb=e.target.checked;render()};
-document.getElementById("reset").onclick=()=>{stopPlay();Object.assign(st,{src:[1,1,1,1,1],mw:0,y0:2013,y1:YMAX,unk:true,states:new Set(["Kachin","Shan"]),basins:new Set(D.F),sub:"",pits:1,nb:false,yearOnly:null});
+document.getElementById("reset").onclick=()=>{stopPlay();Object.assign(st,{src:[1,1,1,1,1],mw:0,y0:2013,y1:YMAX,unk:true,states:new Set(["Kachin","Shan"]),baOff:new Set(),sub:"",pits:1,nb:false,upd:"",yearOnly:null});document.getElementById("fUpd").value="";
  document.querySelectorAll("aside input[type=checkbox]").forEach(c=>{c.checked=!(c.id==="nbOnly"||c.id==="mwOn")});
  border.addTo(map);admin.addTo(map);adminLab.addTo(map);areaLayer.addTo(map);labels.addTo(map);
  y0.value=2013;y1.value=YMAX;document.getElementById("fSub").value="";document.getElementById("pits").value=1;document.getElementById("pitsv").textContent=1;syncY()};
@@ -548,7 +619,10 @@ function select(id,fly){
   <table><tr><td>Mining method</td><td>In-situ leaching</td></tr><tr><td>Metal</td><td>Rare earth</td></tr>
   <tr><td>Year in record</td><td>${p.y??"Not recorded"}</td></tr><tr><td>State</td><td>${p.st}</td></tr>
   <tr><td>River basin</td><td>${p.ba}</td></tr><tr><td>Sub-basin</td><td>${p.sb}</td></tr>
-  <tr><td>Coordinates</td><td>${fmt(p.la)}, ${fmt(p.lo)}</td></tr><tr><td>Credited source</td><td>${p.srcName||D.S[p.src]}</td></tr>${near}</table>`}
+  <tr><td>Coordinates</td><td>${fmt(p.la)}, ${fmt(p.lo)}</td></tr><tr><td>Credited source</td><td>${esc(p.srcName||D.S[p.src])}</td></tr>
+  <tr><td>Stimson “Last Updated”</td><td>${p.lu?fdate(p.lu):"Not given"}</td></tr>
+  ${p.row?`<tr><td>Sheet row</td><td><a href="https://docs.google.com/spreadsheets/d/${STIMSON_SHEET}/edit#gid=${STIMSON_GID}&range=A${p.row}" target="_blank" rel="noopener">Row ${p.row} in Stimson's sheet</a></td></tr>`:""}${near}</table>
+  ${(CHG.byId[p.id]||[]).length?`<div class="small"><b>Changes seen by the weekly check</b></div><ul class="small" style="margin:4px 0 0;padding-left:18px">${CHG.byId[p.id].map(chgLine).join("")}</ul>`:""}`}
  else{body=`<div class="small" style="color:${MWC}">◯ Myanmar Witness / Mizzima</div><h3>Site ${p.id}</h3>${flag}
   <table><tr><td>Location</td><td>${p.tw} Township, ${p.st} State</td></tr><tr><td>Built by</td><td>${p.y} (first visible in Google Earth imagery)</td></tr>
   <tr><td>Pits counted</td><td>${p.pits}</td></tr><tr><td>Coordinates</td><td>${fmt(p.la)}, ${fmt(p.lo)}</td></tr>${near}</table>
@@ -561,8 +635,8 @@ det.onclick=e=>{
  const g=e.target.closest("[data-go]");if(g){e.preventDefault();select(g.dataset.go,true);return}
  const c=e.target.closest("[data-copy]");if(c){navigator.clipboard?.writeText(c.dataset.copy).then(()=>c.textContent="Copied",()=>c.textContent=c.dataset.copy)}
 };
-document.getElementById("q").onkeydown=e=>{if(e.key!=="Enter")return;let v=e.target.value.trim().toUpperCase();if(/^S\d+$/.test(v))v="S"+v.slice(1).padStart(3,"0");if(/^RE\d+$/.test(v))v="RE"+v.slice(2).padStart(4,"0");
- if(byId[v])select(v,true);else e.target.value="",e.target.placeholder="No site "+v+". Try S120 or RE0045"};
+document.getElementById("q").onkeydown=e=>{if(e.key!=="Enter")return;let v=e.target.value.trim().toUpperCase();if(/^S\d+$/.test(v))v="S"+String(+v.slice(1)).padStart(4,"0");if(/^RE\d+$/.test(v))v="RE"+v.slice(2).padStart(4,"0");
+ if(byId[v])select(v,true);else e.target.value="",e.target.placeholder="No site "+v+". Try S0634 or RE0045"};
 
 /* ---------- areas & reports ---------- */
 function flyArea(i){const a=AREAS[i];map.flyTo(a.c,a.z,{duration:1})}
@@ -618,12 +692,12 @@ document.querySelector("nav").onclick=e=>{const b=e.target.closest("button");if(
 
 /* ---------- export ---------- */
 function geojson(){return JSON.stringify({type:"FeatureCollection",features:visible.map(p=>({type:"Feature",geometry:{type:"Point",coordinates:[p.lo,p.la]},
- properties:p.k==="s"?{id:p.id,dataset:"Stimson Center",method:"In-situ Leaching",metal:"Rare Earth",year:p.y,state:p.st,basin:p.ba,sub_basin:p.sb,source:p.srcName||D.S[p.src],near_border_km:p.nb||0}
+ properties:p.k==="s"?{id:p.id,dataset:"Stimson Center",method:"In-situ Leaching",metal:"Rare Earth",year:p.y,state:p.st,basin:p.ba,sub_basin:p.sb,source:p.srcName||D.S[p.src],stimson_last_updated:p.lu||null,sheet_row:p.row||null,near_border_km:p.nb||0}
  :{id:p.id,dataset:"Myanmar Witness/Mizzima",township:p.tw,state:p.st,built_by_year:p.y,pits:p.pits,near_border_km:p.nb||0}}))})}
 document.getElementById("dl").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([geojson()],{type:"application/geo+json"}));a.download="burma_ree_mines_filtered.geojson";document.body.appendChild(a);a.click();a.remove()};
 document.getElementById("cp").onclick=()=>{const m=document.getElementById("cpmsg");navigator.clipboard?.writeText(geojson()).then(()=>m.textContent=`Copied ${visible.length} features.`,()=>m.textContent="Clipboard blocked in this viewer. Use Download instead.")};
 
-fillSubs();setYears();syncY();renderReports(REPS_SNAP);
+fillBasins();fillSubs();setYears();syncY();renderReports(REPS_SNAP);renderCounts();renderChanges();
 const b=L.latLngBounds(ALL.map(p=>[p.la,p.lo]));map.fitBounds(b.pad(.08));
 
 /* ---------- load the latest data ---------- */
@@ -634,18 +708,20 @@ function showStatus(){const part=(k,lab)=>status[k]==="live"?`${lab}: live`:stat
  document.getElementById("dsrc").innerHTML=Object.entries({s:"Stimson sheet",m:"Myanmar Witness ArcGIS layer",a:"BVC Archive sheet",r:"reports.json"}).map(([k,l])=>`<li>${l}: <b>${status[k]==="live"?"loaded live":status[k]==="snap"?"unavailable, using the copy saved "+SNAP_DATE:"loading"}</b>${status.err&&status.err[k]?` <span class="small">(${esc(status.err[k])})</span>`:""}</li>`).join("")}
 status.err={};
 (async()=>{
- const [rs,rm,ra,rr]=await Promise.allSettled([liveStimson(),liveMW(),liveArchive(),fetch("reports.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("HTTP "+r.status);return r.json()})]);
+ const getJSON=u=>fetch(u,{cache:"no-store"}).then(r=>{if(!r.ok)throw Error("HTTP "+r.status);return r.json()});
+ const [rs,rm,ra,rr,rc]=await Promise.allSettled([liveStimson(),liveMW(),liveArchive(),getJSON("reports.json"),getJSON("changes.json")]);
+ if(rc.status==="fulfilled"&&rc.value&&Array.isArray(rc.value.changes))indexChanges(rc.value);
  if(rs.status==="fulfilled"||rm.status==="fulfilled"){
   if(rs.status==="fulfilled")S=rs.value;if(rm.status==="fulfilled")M=rm.value;
   for(const p of [...S,...M])p.nb=kmOutside(p.la,p.lo);crossRef(S,M);crossRef(M,S);
   ALL=[...S,...M];byId=Object.fromEntries(ALL.map(p=>[p.id,p]));
   document.getElementById("ovl").textContent=M.filter(m=>m.nd<300).length;
-  const sel=st.sel;st.sel=null;buildMarkers();fillSubs();setYears();syncY();renderAreas();if(sel&&byId[sel]&&det.classList.contains("on"))select(sel,false)}
+  const sel=st.sel;st.sel=null;buildMarkers();fillBasins();fillSubs();setYears();syncY();renderAreas();renderCounts();if(sel&&byId[sel]&&det.classList.contains("on"))select(sel,false)}
  status.s=rs.status==="fulfilled"?"live":"snap";status.m=rm.status==="fulfilled"?"live":"snap";
  if(ra.status==="fulfilled"){A=ra.value.map(toArc);fillArcFilters();renderArc()}status.a=ra.status==="fulfilled"?"live":"snap";
  if(rr.status==="fulfilled"&&Array.isArray(rr.value)&&rr.value.length)renderReports(rr.value);status.r=rr.status==="fulfilled"?"live":"snap";
  [["s",rs],["m",rm],["a",ra],["r",rr]].forEach(([k,r])=>{if(r.status==="rejected")status.err[k]=String(r.reason&&r.reason.message||r.reason)});
- showStatus()})();
+ renderChanges();showStatus()})();
 }
 </script>
 </body>

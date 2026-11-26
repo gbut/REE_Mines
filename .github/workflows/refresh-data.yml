@@ -1,0 +1,54 @@
+# Weekly refresh of the saved data copies, plus the Stimson change log (changes.json).
+# The live page doesn't depend on this; it keeps the fallback copies current and records what Stimson changed.
+name: Refresh saved data
+
+on:
+  schedule:
+    - cron: "17 15 * * 0"   # Sundays 15:17 UTC (Sunday morning in California), away from the Monday Reports task
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/refresh_data.py
+      - .github/workflows/refresh-data.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch sources and update the saved copies
+        run: python3 scripts/refresh_data.py
+
+      - name: Build index.html
+        run: |
+          python3 build.py
+          python3 build.py --check
+
+      - name: Commit if anything changed
+        run: |
+          if git diff --quiet -- src/data index.html changes.json; then
+            echo "No data changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898499+github-actions[bot]@users.noreply.github.com"
+          git add src/data index.html changes.json
+          git commit -m "Refresh saved data copies and Stimson change log ($(date -u +%Y-%m-%d))"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 10
+          done
+          exit 1

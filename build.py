@@ -11,6 +11,7 @@ Inputs (all relative to the repository root):
   src/data/archive_snapshot.json  saved copy of the BVC Archive (Articles and Reports section)
   src/data/snapshot.json          the date the saved copies were taken
   reports.json                    the Reports list (also fetched live by the page)
+  changes.json                    the Stimson change log written by scripts/refresh_data.py (also fetched live)
 
 The saved copies are only fallbacks: the page loads every source live when it opens.
 """
@@ -34,6 +35,7 @@ def build():
         "/*ADMIN*/null": embed(read("src/data/admin1.json")),
         "/*ARCHIVE*/null": embed(read("src/data/archive_snapshot.json")),
         "/*REPORTS*/null": embed(read("reports.json")),
+        "/*CHANGES*/null": embed(read("changes.json")),
         "{{SNAPSHOT_DATE}}": snap["short"],
         "{{SNAPSHOT_DATE_LONG}}": snap["long"],
     }

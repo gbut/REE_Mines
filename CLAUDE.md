@@ -16,6 +16,9 @@ This repository holds a single-page satellite-map dashboard of in-situ leach rar
 | `src/data/admin1.json` | Kachin and Shan states, plus the bordering Chinese provinces Yunnan and Tibet/Xizang (Natural Earth 10m admin-1, rounded to 3 dp). |
 | `src/data/snapshot.json` | The date the saved copies were taken. Shown on the page. |
 | `reports.json` | The Reports tab. The page fetches it live; a copy is also embedded at build time. |
+| `changes.json` | Stimson change log, written by `scripts/refresh_data.py`. The page fetches it live; a copy is also embedded at build time. |
+| `scripts/refresh_data.py` | Fetches all three sources, rewrites the saved copies in `src/data/`, and appends Stimson differences to `changes.json`. `--from DIR` reads `stimson.csv`, `mw.json`, `bvc.csv` from a folder for testing. |
+| `.github/workflows/refresh-data.yml` | Runs the refresh script, then `build.py`, every Sunday at 15:17 UTC, on manual dispatch, and on any push that changes the script or workflow. Commits to `main` if anything changed. |
 | `build.py` | Builds `index.html`. Run `python3 build.py --check` to confirm the built file is current. |
 
 ## Workflow for any change
@@ -31,14 +34,14 @@ The page loads each source live on every visit, and falls back to its embedded c
 
 | Data | Live request (made from the browser; all allow CORS) | Rules |
 |---|---|---|
-| Stimson sites | Google Sheet `1bfGeMKv3piuMtmnJJq_XW3cBwVwtYISSjX1o4jqRLZE`, gid `1355866538`, gviz CSV: `select C,E,F,G,H,I,J where D='Myanmar' and B='Rare Earth'` | Only Burma rare earth rows; never show other countries or metals. Site IDs `S001…` follow row order. The owner confirmed rows won't be inserted, so keep this ID scheme. Points are split into layers by the credited Source. |
+| Stimson sites | Google Sheet `1bfGeMKv3piuMtmnJJq_XW3cBwVwtYISSjX1o4jqRLZE`, gid `1355866538`. The **whole sheet** is read (CSV export; fallback gviz `select *`, which keeps sheet order) and filtered to `Country = Myanmar` and `Metal = Rare Earth` in the browser. Columns are found by header name. | Only Burma rare earth rows; never show other countries or metals. **Site ID = sheet row number** (`S0634` = row 634; header is row 1), so edits or re-tagging of other rows don't move IDs. Points are split into layers by the credited Source. Column K "Last Updated" is shown on cards and in the Updates filter. |
 | Myanmar Witness (CIR) / Mizzima sites | ArcGIS `services-eu1.arcgis.com/06WOSMGHsCnaFyMp/arcgis/rest/services/rare_earth_arcgis_data_view/FeatureServer/0/query` | Layer is **off by default**, including after "Reset filters". |
 | BVC Archive | Google Sheet `1QNfqAaXdOlTA9PiWYg-fo8wqJ8dhZYWQytxXUMHMNPg`, gid `0`, **CSV export** (`/export?format=csv&gid=0&range=A1:F5000`) | Columns A–F only: Date, Title, Source, Author, Notes, Link. Show **only rows under the "Articles and Reports" header row**; never show the "Social Media" section. A header row has text in A and nothing in B–F. Use the export, not gviz: gviz drops the header rows and blanks mixed-type dates. Never write to this sheet. |
 | Reports | `reports.json` in this repository | Claude's own finds. Must not repeat anything in the BVC Archive (either section), including reposts of the same story. |
 
 Calculated in the browser: the "near China border" flag and the nearest site in the other dataset.
 - **Border flag:** the distance in km beyond the Natural Earth 1:10m Myanmar outline. Points are kept and flagged, not dropped, because every source records them in Kachin.
-- **Overlap:** 228 of the 237 Myanmar Witness sites lie within 300 m of a Stimson point.
+- **Overlap:** the share of Myanmar Witness sites within 300 m of a Stimson point (228 of 237 in Nov 2026). The Data tab computes all its counts from the loaded data; don't hard-code counts in page text.
 
 ### `reports.json` schema
 
@@ -61,15 +64,25 @@ The file is an object with these keys:
 | `S` | Credited-source strings; index 4 = "(not given)" |
 | `T` | `[township, state]` pairs |
 | `mm` | Myanmar outline geometry |
-| `s` | Stimson rows: `[id, year\|null, P-index, F-index, B-index, lat, lon, S-index, km_outside_border, nearest_MW_id, nearest_MW_m]` |
+| `v`, `meta` | Format version (2) and `{date, stimson_sheet_rows, stimson_read_via}` |
+| `s` | Stimson rows: `[id, year\|null, P-index, F-index, B-index, lat, lon, S-index, km_outside_border, nearest_MW_id, nearest_MW_m, last_updated, source_if_not_in_S]` |
 | `m` | Myanmar Witness rows: `[id, lat, lon, year, pits, T-index, image_item_id, km_outside_border, nearest_S_id, nearest_S_m]` |
 
-## Refreshing the saved copies
+## Refreshing the saved copies and the change log
 
-This is optional: the live site doesn't depend on the saved copies.
-- The cloud sandbox's shell can't reach docs.google.com or arcgis.com.
-- Fetch the data with the desktop app's built-in browser, if available. `javascript_tool` on any https page can `fetch()` the URLs above.
-- Rebuild the files in the formats above, update `src/data/snapshot.json`, run `build.py`, and verify row counts against the live source before committing.
+The GitHub Actions workflow does this weekly; don't hand-edit `src/data/` snapshots or `changes.json`.
+- The cloud sandbox's shell can't reach docs.google.com or arcgis.com, so run the script there only with `--from` and mock files.
+- The comparison matches rows by ID and coordinates first, then by identical coordinates under a different ID (reported once per run as `renumbered`, with `[old, new]` pairs), then by ID (`edited`); the rest are `added` or `removed`.
+- If the previous snapshot is older than format 2, the run records a `baseline` date and no changes.
+
+### `changes.json` format
+
+```json
+{"baseline": "YYYY-MM-DD",
+ "changes": [{"date": "YYYY-MM-DD", "id": "S0161", "kind": "edited|added|removed", "prev_id": "(only if renumbered the same run)",
+              "fields": {"year": [old, new], "latitude": [old, new]}},
+             {"date": "YYYY-MM-DD", "kind": "renumbered", "ids": [["S0302", "S0301"]]}]}
+```
 
 ## Scheduled task
 
